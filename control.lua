@@ -90,7 +90,7 @@ function reverseEntireBelt(event)
         local initialBelt = player.selected
         if initialBelt and initialBelt.type == "transport-belt" then
             local startOfBelt = findStartOfBelt(initialBelt)
-            reverseDownstreamBelts(player, startOfBelt, {[startOfBelt.position] = true})
+            reverseDownstreamBelts(startOfBelt, {[startOfBelt.position] = true})
             startOfBelt.direction = oppositeDirection[startOfBelt.direction]
         end
     end
