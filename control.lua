@@ -86,11 +86,13 @@ end
 function reverseEntireBelt(event)
     -- find belt under cursor
     local player = game.players[event.player_index]
-    local initialBelt = player.surface.find_entity("transport-belt", player.cursor_position)
-    if initialBelt then
-        local startOfBelt = findStartOfBelt(initialBelt)
-        reverseDownstreamBelts(startOfBelt)
-        startOfBelt.direction = oppositeDirection[startOfBelt.direction]
+    if player.connected and player.selected and player.controller_type ~= defines.controllers.ghost then
+        local initialBelt = player.selected
+        if initialBelt and initialBelt.type == "transport-belt" then
+            local startOfBelt = findStartOfBelt(initialBelt)
+            reverseDownstreamBelts2(player, startOfBelt, {[startOfBelt.position] = true})
+            startOfBelt.direction = oppositeDirection[startOfBelt.direction]
+        end
     end
 end
 
