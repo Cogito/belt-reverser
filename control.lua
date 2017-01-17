@@ -59,13 +59,24 @@ function findStartOfBelt(currentBelt, seenBelts)
     end
 end
 
-function reverseDownstreamBelts(currentBelt, seenBelts)
-    seenBelts = seenBelts or {}
+function reverseDownstreamBelts2(player, currentBelt, seenBelts)
+    player.print("enter reverse downstream")
+    --seenBelts = seenBelts or {}
     local newBelt = currentBelt.surface.find_entity("transport-belt", adjacentPosition(currentBelt.position, currentBelt.direction))
+    --player.print("new belt at "..printPosition(newBelt.position))
+    --player.print("new belt direction: "..newBelt.direction)
+    --player.print("current belt direction: "..currentBelt.direction)
+    --player.print(newBelt.direction == oppositeDirection[currentBelt.direction])
+
     if      -- there is no belt
-               newBelt == nil
-            -- we've been here before
-            or seenBelts[newBelt.position]
+               newBelt == nil then return end
+            -- we've been here befores
+            --or
+    if seenBelts[newBelt.position] then
+        player.print("apparently I've seen this before: "..printPosition(newBelt.position))
+        return
+    end
+    if false
             -- currentBelt and newBelt run into each other
             or newBelt.direction == oppositeDirection[currentBelt.direction]
             or newBelt.direction ~= currentBelt.direction and (
@@ -76,11 +87,21 @@ function reverseDownstreamBelts(currentBelt, seenBelts)
                ) then
         return -- we've nothing left to do as at end of belt
     else
+        --player.print("reversing "..printPosition(newBelt.position))
         -- set newBelt direction to the opposite of current belt - this should reverse the entire line - but do it after reversing downstream
-        seenBelts[newBelt.position] = newBelt
-        reverseDownstreamBelts(newBelt, seenBelts)
+        player.print("in front")
+        --player.print("I am at new belt"..printPosition(newBelt.position)..", I have already seen: goobly")
+        --for key,value in pairs(seenBelts) do player.print(printPosition(key)..": "..tostring(value)) end
+        --seenBelts[newBelt.position] = true
+        player.print("second time x2")
+        --for key,value in pairs(seenBelts) do player.print(printPosition(key)..": "..tostring(value)) end
+        reverseDownstreamBelts2(player, newBelt, seenBelts)
         newBelt.direction = oppositeDirection[currentBelt.direction]
     end
+end
+
+function printPosition(position)
+    return "("..position.x..","..position.y..")"
 end
 
 function reverseEntireBelt(event)
@@ -89,7 +110,9 @@ function reverseEntireBelt(event)
     if player.connected and player.selected and player.controller_type ~= defines.controllers.ghost then
         local initialBelt = player.selected
         if initialBelt and initialBelt.type == "transport-belt" then
+            player.print("initial belt at "..printPosition(initialBelt.position))
             local startOfBelt = findStartOfBelt(initialBelt)
+            player.print("start of belt at "..printPosition(startOfBelt.position))
             reverseDownstreamBelts2(player, startOfBelt, {[startOfBelt.position] = true})
             startOfBelt.direction = oppositeDirection[startOfBelt.direction]
         end
