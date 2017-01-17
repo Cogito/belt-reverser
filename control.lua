@@ -68,10 +68,12 @@ function reverseDownstreamBelts(currentBelt, seenBelts)
             or seenBelts[newBelt.position]
             -- currentBelt and newBelt run into each other
             or newBelt.direction == oppositeDirection[currentBelt.direction]
-            -- currentBelt is sideloading on to newBelt - newBelt is sandwiched between two belts
-            or positionIsBeltWithDirection(currentBelt.surface, adjacentPosition(newBelt.position, currentBelt.direction), oppositeDirection[currentBelt.direction])
-            -- currentBelt is sideloading on to newBelt - newBelt is continuing another belt
-            or positionIsBeltWithDirection(currentBelt.surface, adjacentPosition(newBelt.position, oppositeDirection[newBelt.direction]), newBelt.direction) then
+            or newBelt.direction ~= currentBelt.direction and (
+                -- currentBelt is sideloading on to newBelt - newBelt is sandwiched between two belts
+                 positionIsBeltWithDirection(currentBelt.surface, adjacentPosition(newBelt.position, currentBelt.direction), oppositeDirection[currentBelt.direction])
+                -- currentBelt is sideloading on to newBelt - newBelt is continuing another belt
+                or positionIsBeltWithDirection(currentBelt.surface, adjacentPosition(newBelt.position, oppositeDirection[newBelt.direction]), newBelt.direction)
+               ) then
         return -- we've nothing left to do as at end of belt
     else
         -- set newBelt direction to the opposite of current belt - this should reverse the entire line - but do it after reversing downstream
