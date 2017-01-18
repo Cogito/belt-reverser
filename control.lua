@@ -31,14 +31,28 @@ function findAdjacentBeltWithDirection(belt, adjacentDirection, direction)
 end
 
 function findAdjacentBelt(belt, direction)
+    local belt = belt
+    if belt.type == "underground-belt" then
+        game.print(belt.belt_to_ground_type)
+        game.print(direction)
+        game.print(belt.direction.." == "..direction)
+        game.print(direction)
+        if (belt.direction == direction and belt.belt_to_ground_type == "output") or (belt.direction == oppositeDirection[direction] and belt.belt_to_ground_type == "input") then
+            return belt.neighbours[1]
+        end
+    end
+
     local newBelt = belt.surface.find_entity("transport-belt", adjacentPosition(belt.position, direction))
+    if not newBelt then
+        newBelt = belt.surface.find_entity("underground-belt", adjacentPosition(belt.position, direction))
+    end
     return newBelt
 end
 
 function findStartOfBelt(currentBelt, initialBelt)
     -- check if this is a continuation of another belt in a straight line
     local linearBelt = findAdjacentBelt(currentBelt, oppositeDirection[currentBelt.direction])
-    if linearBelt ~= nil and linearBelt.direction == currentBelt.direction then
+    if linearBelt ~= nil and linearBelt.direction == currentBelt.direction and not (linearBelt.type == "underground-belt" and linearBelt.belt_to_ground_type == "input") then
         if linearBelt == initialBelt then return currentBelt end
         return findStartOfBelt(linearBelt, initialBelt)
     end
@@ -70,6 +84,8 @@ function reverseDownstreamBelts(currentBelt, startOfBelt)
                findAdjacentBeltWithDirection(newBelt, currentBelt.direction, oppositeDirection[currentBelt.direction])
                 -- currentBelt is sideloading on to newBelt - newBelt is continuing another belt
                 or findAdjacentBeltWithDirection(newBelt, oppositeDirection[newBelt.direction], newBelt.direction)
+                -- currentBelt is sideloading on to newBelt - newBelt is an underground belt
+                or newBelt.type == "underground-belt"
                ) then
         return -- we've nothing left to do as at end of belt
     elseif newBelt == startOfBelt then
