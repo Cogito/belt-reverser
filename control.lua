@@ -37,15 +37,14 @@ end
 
 function findStartOfBelt(currentBelt, initialBelt)
     -- check if this is a continuation of another belt in a straight line
-    local linearBelt = currentBelt.surface.find_entity("transport-belt",
-        adjacentPosition(currentBelt.position, oppositeDirection[currentBelt.direction]))
+    local linearBelt = findAdjacentBelt(currentBelt, oppositeDirection[currentBelt.direction])
     if linearBelt ~= nil and linearBelt.direction == currentBelt.direction then
         if linearBelt == initialBelt then return currentBelt end
         return findStartOfBelt(linearBelt, initialBelt)
     end
     -- check for belts feeding from left or right (but not both!)
-    local leftTurnBelt = currentBelt.surface.find_entity("transport-belt", adjacentPosition(currentBelt.position, leftTurn[currentBelt.direction]))
-    local rightTurnBelt = currentBelt.surface.find_entity("transport-belt", adjacentPosition(currentBelt.position, rightTurn[currentBelt.direction]))
+    local leftTurnBelt = findAdjacentBelt(currentBelt, leftTurn[currentBelt.direction])
+    local rightTurnBelt = findAdjacentBelt(currentBelt, rightTurn[currentBelt.direction])
     local feedsLeft, feedsRight
     if leftTurnBelt and leftTurnBelt.direction == rightTurn[currentBelt.direction] then feedsLeft = true end
     if rightTurnBelt and rightTurnBelt.direction == leftTurn[currentBelt.direction] then feedsRight = true end
@@ -61,7 +60,7 @@ function findStartOfBelt(currentBelt, initialBelt)
 end
 
 function reverseDownstreamBelts(currentBelt, startOfBelt)
-    local newBelt = currentBelt.surface.find_entity("transport-belt", adjacentPosition(currentBelt.position, currentBelt.direction))
+    local newBelt = findAdjacentBelt(currentBelt, currentBelt.direction)
     if      -- there is no belt
                newBelt == nil
             -- currentBelt and newBelt run into each other
