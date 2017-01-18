@@ -25,9 +25,9 @@ local rightTurn = {
     [defines.direction.west] = defines.direction.north,
 }
 
-function positionIsBeltWithDirection(surface, position, direction)
-    local belt = surface.find_entity("transport-belt", position)
-    return belt and belt.direction == direction
+function findAdjacentBeltWithDirection(belt, adjacentDirection, direction)
+    local foundBelt = findAdjacentBelt(belt, adjacentDirection)
+    return foundBelt and foundBelt.direction == direction
 end
 
 function findAdjacentBelt(belt, direction)
@@ -67,9 +67,9 @@ function reverseDownstreamBelts(currentBelt, startOfBelt)
             or newBelt.direction == oppositeDirection[currentBelt.direction]
             or newBelt.direction ~= currentBelt.direction and (
                 -- currentBelt is sideloading on to newBelt - newBelt is sandwiched between two belts
-                 positionIsBeltWithDirection(currentBelt.surface, adjacentPosition(newBelt.position, currentBelt.direction), oppositeDirection[currentBelt.direction])
+               findAdjacentBeltWithDirection(newBelt, currentBelt.direction, oppositeDirection[currentBelt.direction])
                 -- currentBelt is sideloading on to newBelt - newBelt is continuing another belt
-                or positionIsBeltWithDirection(currentBelt.surface, adjacentPosition(newBelt.position, oppositeDirection[newBelt.direction]), newBelt.direction)
+                or findAdjacentBeltWithDirection(newBelt, oppositeDirection[newBelt.direction], newBelt.direction)
                ) then
         return -- we've nothing left to do as at end of belt
     elseif newBelt == startOfBelt then
