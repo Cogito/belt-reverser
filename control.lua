@@ -59,8 +59,6 @@ function reverseDownstreamBelts(currentBelt, startOfBelt)
     local newBelt = currentBelt.surface.find_entity("transport-belt", adjacentPosition(currentBelt.position, currentBelt.direction))
     if      -- there is no belt
                newBelt == nil
-            -- we've been here before
-            or newBelt == startOfBelt
             -- currentBelt and newBelt run into each other
             or newBelt.direction == oppositeDirection[currentBelt.direction]
             or newBelt.direction ~= currentBelt.direction and (
@@ -70,6 +68,11 @@ function reverseDownstreamBelts(currentBelt, startOfBelt)
                 or positionIsBeltWithDirection(currentBelt.surface, adjacentPosition(newBelt.position, oppositeDirection[newBelt.direction]), newBelt.direction)
                ) then
         return -- we've nothing left to do as at end of belt
+    elseif newBelt == startOfBelt then
+        -- special case for when we detect a loop
+        -- Normally the head of the belt is simply reversed. Here, the head of the belt is part of the loop so remember to set its direction correctly later
+        directionToTurnStartBelt = oppositeDirection[currentBelt.direction]
+        return
     else
         -- set newBelt direction to the opposite of current belt - this should reverse the entire line - but do it after reversing downstream
         reverseDownstreamBelts(newBelt, startOfBelt)
@@ -84,8 +87,9 @@ function reverseEntireBelt(event)
         local initialBelt = player.selected
         if initialBelt and initialBelt.type == "transport-belt" then
             local startOfBelt = findStartOfBelt(initialBelt, initialBelt)
+            directionToTurnStartBelt = oppositeDirection[startOfBelt.direction]
             reverseDownstreamBelts(startOfBelt, startOfBelt)
-            startOfBelt.direction = oppositeDirection[startOfBelt.direction]
+            startOfBelt.direction = directionToTurnStartBelt
         end
     end
 end
