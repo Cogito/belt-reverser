@@ -30,6 +30,11 @@ function positionIsBeltWithDirection(surface, position, direction)
     return belt and belt.direction == direction
 end
 
+function findAdjacentBelt(belt, direction)
+    local newBelt = belt.surface.find_entity("transport-belt", adjacentPosition(belt.position, direction))
+    return newBelt
+end
+
 function findStartOfBelt(currentBelt, initialBelt)
     -- check if this is a continuation of another belt in a straight line
     local linearBelt = currentBelt.surface.find_entity("transport-belt",
