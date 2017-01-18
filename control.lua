@@ -30,15 +30,13 @@ function positionIsBeltWithDirection(surface, position, direction)
     return belt and belt.direction == direction
 end
 
-function findStartOfBelt(currentBelt, seenBelts)
-    seenBelts = seenBelts or {}
+function findStartOfBelt(currentBelt, initialBelt)
     -- check if this is a continuation of another belt in a straight line
     local linearBelt = currentBelt.surface.find_entity("transport-belt",
         adjacentPosition(currentBelt.position, oppositeDirection[currentBelt.direction]))
     if linearBelt ~= nil and linearBelt.direction == currentBelt.direction then
-        if seenBelts[linearBelt.position] then return currentBelt end
-        seenBelts[linearBelt.position] = true
-        return findStartOfBelt(linearBelt, seenBelts)
+        if linearBelt == initialBelt then return currentBelt end
+        return findStartOfBelt(linearBelt, initialBelt)
     end
     -- check for belts feeding from left or right (but not both!)
     local leftTurnBelt = currentBelt.surface.find_entity("transport-belt", adjacentPosition(currentBelt.position, leftTurn[currentBelt.direction]))
@@ -48,24 +46,19 @@ function findStartOfBelt(currentBelt, seenBelts)
     if rightTurnBelt and rightTurnBelt.direction == leftTurn[currentBelt.direction] then feedsRight = true end
 
     if feedsLeft and not feedsRight then
-        if seenBelts[leftTurnBelt.position] then return currentBelt end
-        seenBelts[leftTurnBelt.position] = true
-        return findStartOfBelt(leftTurnBelt, seenBelts)
+        if leftTurnBelt == initialBelt then return currentBelt end
+        return findStartOfBelt(leftTurnBelt, initialBelt)
     elseif feedsRight and not feedsLeft then
-        if seenBelts[rightTurnBelt.position] then return currentBelt end
-        seenBelts[rightTurnBelt.position] = true
-        return findStartOfBelt(rightTurnBelt, seenBelts)
+        if rightTurnBelt == initialBelt then return currentBelt end
+        return findStartOfBelt(rightTurnBelt, initialBelt)
     else return currentBelt
     end
 end
 
-function reverseDownstreamBelts(currentBelt, seenBelts)
-    seenBelts = seenBelts or {}
+function reverseDownstreamBelts(currentBelt, startOfBelt)
     local newBelt = currentBelt.surface.find_entity("transport-belt", adjacentPosition(currentBelt.position, currentBelt.direction))
     if      -- there is no belt
                newBelt == nil
-            -- we've been here before
-            or seenBelts[newBelt.position]
             -- currentBelt and newBelt run into each other
             or newBelt.direction == oppositeDirection[currentBelt.direction]
             or newBelt.direction ~= currentBelt.direction and (
@@ -75,10 +68,14 @@ function reverseDownstreamBelts(currentBelt, seenBelts)
                 or positionIsBeltWithDirection(currentBelt.surface, adjacentPosition(newBelt.position, oppositeDirection[newBelt.direction]), newBelt.direction)
                ) then
         return -- we've nothing left to do as at end of belt
+    elseif newBelt == startOfBelt then
+        -- special case for when we detect a loop
+        -- Normally the head of the belt is simply reversed. Here, the head of the belt is part of the loop so remember to set its direction correctly later
+        directionToTurnStartBelt = oppositeDirection[currentBelt.direction]
+        return
     else
         -- set newBelt direction to the opposite of current belt - this should reverse the entire line - but do it after reversing downstream
-        seenBelts[newBelt.position] = newBelt
-        reverseDownstreamBelts(newBelt, seenBelts)
+        reverseDownstreamBelts(newBelt, startOfBelt)
         newBelt.direction = oppositeDirection[currentBelt.direction]
     end
 end
@@ -89,9 +86,10 @@ function reverseEntireBelt(event)
     if player.connected and player.selected and player.controller_type ~= defines.controllers.ghost then
         local initialBelt = player.selected
         if initialBelt and initialBelt.type == "transport-belt" then
-            local startOfBelt = findStartOfBelt(initialBelt)
-            reverseDownstreamBelts(startOfBelt, {[startOfBelt.position] = true})
-            startOfBelt.direction = oppositeDirection[startOfBelt.direction]
+            local startOfBelt = findStartOfBelt(initialBelt, initialBelt)
+            directionToTurnStartBelt = oppositeDirection[startOfBelt.direction]
+            reverseDownstreamBelts(startOfBelt, startOfBelt)
+            startOfBelt.direction = directionToTurnStartBelt
         end
     end
 end
