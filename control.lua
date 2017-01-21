@@ -105,7 +105,7 @@ function reverseEntireBelt(event)
     local player = game.players[event.player_index]
     if player.connected and player.selected and player.controller_type ~= defines.controllers.ghost then
         local initialBelt = player.selected
-        if initialBelt and initialBelt.type == "transport-belt" then
+        if initialBelt and (initialBelt.type == "transport-belt" or initialBelt.type == "underground-belt" or initialBelt.type == "loader") then
             local startOfBelt = findStartOfBelt(initialBelt, initialBelt)
             directionToTurnStartBelt = oppositeDirection[startOfBelt.direction]
             reverseDownstreamBelts(startOfBelt, startOfBelt)
