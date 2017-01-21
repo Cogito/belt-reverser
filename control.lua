@@ -1,4 +1,4 @@
-function adjacentPosition(position, direction)
+local function adjacentPosition(position, direction)
     if direction == defines.direction.north then return { position.x, position.y - 1 }
     elseif direction == defines.direction.south then return { position.x, position.y + 1 }
     elseif direction == defines.direction.east then return { position.x + 1, position.y }
@@ -25,69 +25,147 @@ local rightTurn = {
     [defines.direction.west] = defines.direction.north,
 }
 
-function findAdjacentBeltWithDirection(belt, adjacentDirection, direction)
-    local foundBelt = findAdjacentBelt(belt, adjacentDirection)
-    return foundBelt and foundBelt.direction == direction
+local function isBeltTerminatingDownstream(belt)
+    local downstreamBelt   = belt.surface.find_entity("transport-belt", adjacentPosition(belt.position, belt.direction))
+    local downstreamUGBelt = belt.surface.find_entity("underground-belt", adjacentPosition(belt.position, belt.direction))
+    local downstreamLoader = belt.surface.find_entity("loader", adjacentPosition(belt.position, belt.direction))
+    if downstreamBelt   and downstreamBelt.direction ~= oppositeDirection[belt.direction] then return false end
+    if downstreamUGBelt and (downstreamUGBelt.direction ~= oppositeDirection[belt.direction]
+            and not (downstreamUGBelt.direction == belt.direction and downstreamUGBelt.belt_to_ground_type == "output")) then return false end
+    if downstreamLoader and downstreamLoader.direction ~= oppositeDirection[belt.direction] then return false end
+    return true
 end
 
-function findAdjacentBelt(belt, direction)
-    local belt = belt
+local function isBeltSideloadingDownstream(belt)
+    local downstreamBelt   = belt.surface.find_entity("transport-belt", adjacentPosition(belt.position, belt.direction))
+    local downstreamUGBelt = belt.surface.find_entity("underground-belt", adjacentPosition(belt.position, belt.direction))
+    local downstreamLoader = belt.surface.find_entity("loader", adjacentPosition(belt.position, belt.direction))
+    if downstreamLoader then return false end
+    if downstreamUGBelt and (downstreamUGBelt.direction == belt.direction or downstreamUGBelt.direction == oppositeDirection[belt.direction]) then return false end
+    if downstreamBelt   then
+        if (downstreamBelt.direction   == belt.direction or downstreamBelt.direction   == oppositeDirection[belt.direction]) then return false else
+        local upstreamBelt   = belt.surface.find_entity("transport-belt", adjacentPosition(downstreamBelt.position, oppositeDirection[downstreamBelt.direction]))
+        local upstreamUGBelt = belt.surface.find_entity("underground-belt", adjacentPosition(downstreamBelt.position, oppositeDirection[downstreamBelt.direction]))
+        local upstreamLoader = belt.surface.find_entity("loader", adjacentPosition(downstreamBelt.position, oppositeDirection[downstreamBelt.direction]))
+        local oppositeBelt   = belt.surface.find_entity("transport-belt", adjacentPosition(downstreamBelt.position, belt.direction))
+        local oppositeUGBelt = belt.surface.find_entity("underground-belt", adjacentPosition(downstreamBelt.position, belt.direction))
+        local oppositeLoader = belt.surface.find_entity("loader", adjacentPosition(downstreamBelt.position, belt.direction))
+
+        local continuingBelt = true
+        if not (upstreamBelt or upstreamUGBelt or upstreamLoader) then continuingBelt = false end
+        if upstreamBelt   and upstreamBelt.direction   ~= downstreamBelt.direction then continuingBelt = false end
+        if upstreamUGBelt and upstreamUGBelt.direction ~= downstreamBelt.direction and upstreamUGBelt.belt_to_ground_type ~= "output" then continuingBelt = false end
+        if upstreamLoader and upstreamLoader.direction ~= downstreamBelt.direction then continuingBelt = false end
+
+        local sandwichBelt = true
+        if not (oppositeBelt or oppositeUGBelt or oppositeLoader) then sandwichBelt = false end
+        if oppositeBelt   and oppositeBelt.direction   ~= oppositeDirection[belt.direction] then sandwichBelt = false end
+        if oppositeUGBelt and oppositeUGBelt.direction ~= oppositeDirection[belt.direction] and oppositeUGBelt.belt_to_ground_type ~= "output" then sandwichBelt = false end
+        if oppositeLoader and oppositeLoader.direction ~= oppositeDirection[belt.direction] then sandwichBelt = false end
+
+        if not continuingBelt and not sandwichBelt then return false end
+    end end
+    return true
+end
+
+local function getNextBeltDownstream(belt)
+    if belt.type == "underground-belt" and belt.belt_to_ground_type == "input" then
+        if belt.neighbours then return belt.neighbours[1] else return nil end
+    end
+
+    local downstreamBelt   = belt.surface.find_entity("transport-belt", adjacentPosition(belt.position, belt.direction))
+    local downstreamUGBelt = belt.surface.find_entity("underground-belt", adjacentPosition(belt.position, belt.direction))
+    local downstreamLoader = belt.surface.find_entity("loader", adjacentPosition(belt.position, belt.direction))
+
+    if isBeltTerminatingDownstream(belt) then return nil end
+    if isBeltSideloadingDownstream(belt) then return nil end
+    local returnBelt = downstreamBelt or downstreamUGBelt or downstreamLoader
+    return returnBelt
+end
+
+local function getUpstreamBeltInDirection(belt, direction)
+    local upstreamBelt   = belt.surface.find_entity("transport-belt", adjacentPosition(belt.position, direction))
+    local upstreamUGBelt = belt.surface.find_entity("underground-belt", adjacentPosition(belt.position, direction))
+    local upstreamLoader = belt.surface.find_entity("loader", adjacentPosition(belt.position, direction))
+    if upstreamBelt and upstreamBelt.direction == oppositeDirection[direction] then return upstreamBelt end
+    if upstreamLoader and upstreamLoader.direction == oppositeDirection[direction] then return upstreamLoader end
+    if upstreamUGBelt and upstreamUGBelt.direction == oppositeDirection[direction] and upstreamUGBelt.belt_to_ground_type == "output" then return upstreamUGBelt end
+    return nil
+end
+
+local function getNextBeltUpstream(belt)
+    if belt.type == "underground-belt" and belt.belt_to_ground_type == "output" then
+        if belt.neighbours then return belt.neighbours[1] else return nil end
+    end
+
+    local linearBelt    = getUpstreamBeltInDirection(belt, oppositeDirection[belt.direction])
+    local leftTurnBelt  = getUpstreamBeltInDirection(belt, leftTurn[belt.direction])
+    local rightTurnBelt = getUpstreamBeltInDirection(belt, rightTurn[belt.direction])
+    if linearBelt then return linearBelt end
+    if leftTurnBelt and not rightTurnBelt then
+        return leftTurnBelt end
+    if rightTurnBelt and not leftTurnBelt then
+        return rightTurnBelt end
+    return nil
+end
+
+local function findStartOfBelt(currentBelt, initialBelt)
+    local newBelt  = getNextBeltUpstream(currentBelt)
+    if not newBelt or newBelt == initialBelt then return currentBelt end
+    return findStartOfBelt(newBelt, initialBelt)
+end
+
+local function reverseBelt(belt, direction)
     if belt.type == "underground-belt" then
-        game.print(belt.belt_to_ground_type)
-        game.print(direction)
-        game.print(belt.direction.." == "..direction)
-        game.print(direction)
-        if (belt.direction == direction and belt.belt_to_ground_type == "output") or (belt.direction == oppositeDirection[direction] and belt.belt_to_ground_type == "input") then
-            return belt.neighbours[1]
+        -- only reverse inputs, unless the output is not connected - then reverse it too
+        -- for now, assume that reversing ug belt just means reversing it
+        if belt.belt_to_ground_type == "input" then
+            local output = belt.neighbours[1]
+            local surface = belt.surface
+
+            local newInputParams
+            if output then end
+            local newOutputParams = {
+                name         = belt.name,
+                position     = belt.position,
+                force        = belt.force,
+                direction    = oppositeDirection[belt.direction],
+                type         = "output",
+                player = player,
+            }
+            belt.destroy()
+            if output then
+                newInputParams = {
+                    name         = output.name,
+                    position     = output.position,
+                    force        = output.force,
+                    direction    = oppositeDirection[output.direction],
+                    type         = "input",
+                    player = player,
+                }
+                output.destroy()
+                local newInput = surface.create_entity(newInputParams)
+            end
+            local newOutput = surface.create_entity(newOutputParams)
+        elseif not belt.neighbours[1] then
+            local newInput = belt.surface.create_entity{
+                name         = belt.name,
+                position     = belt.position,
+                force        = belt.force,
+                direction    = oppositeDirection[belt.direction],
+                type         = "input",
+                fast_replace = true,
+                spill        = false,
+            }
         end
-    end
-
-    local newBelt = belt.surface.find_entity("transport-belt", adjacentPosition(belt.position, direction))
-    if not newBelt then
-        newBelt = belt.surface.find_entity("underground-belt", adjacentPosition(belt.position, direction))
-    end
-    return newBelt
-end
-
-function findStartOfBelt(currentBelt, initialBelt)
-    -- check if this is a continuation of another belt in a straight line
-    local linearBelt = findAdjacentBelt(currentBelt, oppositeDirection[currentBelt.direction])
-    if linearBelt ~= nil and linearBelt.direction == currentBelt.direction and not (linearBelt.type == "underground-belt" and linearBelt.belt_to_ground_type == "input") then
-        if linearBelt == initialBelt then return currentBelt end
-        return findStartOfBelt(linearBelt, initialBelt)
-    end
-    -- check for belts feeding from left or right (but not both!)
-    local leftTurnBelt = findAdjacentBelt(currentBelt, leftTurn[currentBelt.direction])
-    local rightTurnBelt = findAdjacentBelt(currentBelt, rightTurn[currentBelt.direction])
-    local feedsLeft, feedsRight
-    if leftTurnBelt and leftTurnBelt.direction == rightTurn[currentBelt.direction] then feedsLeft = true end
-    if rightTurnBelt and rightTurnBelt.direction == leftTurn[currentBelt.direction] then feedsRight = true end
-
-    if feedsLeft and not feedsRight then
-        if leftTurnBelt == initialBelt then return currentBelt end
-        return findStartOfBelt(leftTurnBelt, initialBelt)
-    elseif feedsRight and not feedsLeft then
-        if rightTurnBelt == initialBelt then return currentBelt end
-        return findStartOfBelt(rightTurnBelt, initialBelt)
-    else return currentBelt
+    else
+        belt.direction = direction
     end
 end
 
-function reverseDownstreamBelts(currentBelt, startOfBelt)
-    local newBelt = findAdjacentBelt(currentBelt, currentBelt.direction)
-    if      -- there is no belt
-               newBelt == nil
-            -- currentBelt and newBelt run into each other
-            or newBelt.direction == oppositeDirection[currentBelt.direction]
-            or newBelt.direction ~= currentBelt.direction and (
-                -- currentBelt is sideloading on to newBelt - newBelt is sandwiched between two belts
-               findAdjacentBeltWithDirection(newBelt, currentBelt.direction, oppositeDirection[currentBelt.direction])
-                -- currentBelt is sideloading on to newBelt - newBelt is continuing another belt
-                or findAdjacentBeltWithDirection(newBelt, oppositeDirection[newBelt.direction], newBelt.direction)
-                -- currentBelt is sideloading on to newBelt - newBelt is an underground belt
-                or newBelt.type == "underground-belt"
-               ) then
-        return -- we've nothing left to do as at end of belt
+local function reverseDownstreamBelts(currentBelt, startOfBelt)
+    local newBelt = getNextBeltDownstream(currentBelt)
+    if newBelt == nil then return -- we've nothing left to do as at end of belt
     elseif newBelt == startOfBelt then
         -- special case for when we detect a loop
         -- Normally the head of the belt is simply reversed. Here, the head of the belt is part of the loop so remember to set its direction correctly later
@@ -96,20 +174,20 @@ function reverseDownstreamBelts(currentBelt, startOfBelt)
     else
         -- set newBelt direction to the opposite of current belt - this should reverse the entire line - but do it after reversing downstream
         reverseDownstreamBelts(newBelt, startOfBelt)
-        newBelt.direction = oppositeDirection[currentBelt.direction]
+        reverseBelt(newBelt, oppositeDirection[currentBelt.direction])
     end
 end
 
-function reverseEntireBelt(event)
+local function reverseEntireBelt(event)
     -- find belt under cursor
-    local player = game.players[event.player_index]
+     player = game.players[event.player_index]
     if player.connected and player.selected and player.controller_type ~= defines.controllers.ghost then
         local initialBelt = player.selected
         if initialBelt and (initialBelt.type == "transport-belt" or initialBelt.type == "underground-belt" or initialBelt.type == "loader") then
             local startOfBelt = findStartOfBelt(initialBelt, initialBelt)
             directionToTurnStartBelt = oppositeDirection[startOfBelt.direction]
             reverseDownstreamBelts(startOfBelt, startOfBelt)
-            startOfBelt.direction = directionToTurnStartBelt
+            reverseBelt(startOfBelt, directionToTurnStartBelt)
         end
     end
 end
