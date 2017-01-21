@@ -25,10 +25,14 @@ local rightTurn = {
     [defines.direction.west] = defines.direction.north,
 }
 
+local function getBeltLike(surface, position, type)
+    return surface.find_entities_filtered{ position = position, type = type, }[1]
+end
+
 local function isBeltTerminatingDownstream(belt)
-    local downstreamBelt   = belt.surface.find_entity("transport-belt", adjacentPosition(belt.position, belt.direction))
-    local downstreamUGBelt = belt.surface.find_entity("underground-belt", adjacentPosition(belt.position, belt.direction))
-    local downstreamLoader = belt.surface.find_entity("loader", adjacentPosition(belt.position, belt.direction))
+    local downstreamBelt   = getBeltLike(belt.surface, adjacentPosition(belt.position, belt.direction), "transport-belt")
+    local downstreamUGBelt = getBeltLike(belt.surface, adjacentPosition(belt.position, belt.direction), "underground-belt")
+    local downstreamLoader = getBeltLike(belt.surface, adjacentPosition(belt.position, belt.direction), "loader")
     if downstreamBelt   and downstreamBelt.direction ~= oppositeDirection[belt.direction] then return false end
     if downstreamUGBelt and (downstreamUGBelt.direction ~= oppositeDirection[belt.direction]
             and not (downstreamUGBelt.direction == belt.direction and downstreamUGBelt.belt_to_ground_type == "output")) then return false end
@@ -37,19 +41,19 @@ local function isBeltTerminatingDownstream(belt)
 end
 
 local function isBeltSideloadingDownstream(belt)
-    local downstreamBelt   = belt.surface.find_entity("transport-belt", adjacentPosition(belt.position, belt.direction))
-    local downstreamUGBelt = belt.surface.find_entity("underground-belt", adjacentPosition(belt.position, belt.direction))
-    local downstreamLoader = belt.surface.find_entity("loader", adjacentPosition(belt.position, belt.direction))
+    local downstreamBelt   = getBeltLike(belt.surface, adjacentPosition(belt.position, belt.direction), "transport-belt")
+    local downstreamUGBelt = getBeltLike(belt.surface, adjacentPosition(belt.position, belt.direction), "underground-belt")
+    local downstreamLoader = getBeltLike(belt.surface, adjacentPosition(belt.position, belt.direction), "loader")
     if downstreamLoader then return false end
     if downstreamUGBelt and (downstreamUGBelt.direction == belt.direction or downstreamUGBelt.direction == oppositeDirection[belt.direction]) then return false end
     if downstreamBelt   then
         if (downstreamBelt.direction   == belt.direction or downstreamBelt.direction   == oppositeDirection[belt.direction]) then return false else
-        local upstreamBelt   = belt.surface.find_entity("transport-belt", adjacentPosition(downstreamBelt.position, oppositeDirection[downstreamBelt.direction]))
-        local upstreamUGBelt = belt.surface.find_entity("underground-belt", adjacentPosition(downstreamBelt.position, oppositeDirection[downstreamBelt.direction]))
-        local upstreamLoader = belt.surface.find_entity("loader", adjacentPosition(downstreamBelt.position, oppositeDirection[downstreamBelt.direction]))
-        local oppositeBelt   = belt.surface.find_entity("transport-belt", adjacentPosition(downstreamBelt.position, belt.direction))
-        local oppositeUGBelt = belt.surface.find_entity("underground-belt", adjacentPosition(downstreamBelt.position, belt.direction))
-        local oppositeLoader = belt.surface.find_entity("loader", adjacentPosition(downstreamBelt.position, belt.direction))
+        local upstreamBelt   = getBeltLike(belt.surface, adjacentPosition(downstreamBelt.position, oppositeDirection[downstreamBelt.direction]), "transport-belt")
+        local upstreamUGBelt = getBeltLike(belt.surface, adjacentPosition(downstreamBelt.position, oppositeDirection[downstreamBelt.direction]), "underground-belt")
+        local upstreamLoader = getBeltLike(belt.surface, adjacentPosition(downstreamBelt.position, oppositeDirection[downstreamBelt.direction]), "loader")
+        local oppositeBelt   = getBeltLike(belt.surface, adjacentPosition(downstreamBelt.position, belt.direction), "transport-belt")
+        local oppositeUGBelt = getBeltLike(belt.surface, adjacentPosition(downstreamBelt.position, belt.direction), "underground-belt")
+        local oppositeLoader = getBeltLike(belt.surface, adjacentPosition(downstreamBelt.position, belt.direction), "loader")
 
         local continuingBelt = true
         if not (upstreamBelt or upstreamUGBelt or upstreamLoader) then continuingBelt = false end
@@ -73,9 +77,9 @@ local function getNextBeltDownstream(belt)
         if belt.neighbours then return belt.neighbours[1] else return nil end
     end
 
-    local downstreamBelt   = belt.surface.find_entity("transport-belt", adjacentPosition(belt.position, belt.direction))
-    local downstreamUGBelt = belt.surface.find_entity("underground-belt", adjacentPosition(belt.position, belt.direction))
-    local downstreamLoader = belt.surface.find_entity("loader", adjacentPosition(belt.position, belt.direction))
+    local downstreamBelt   = getBeltLike(belt.surface, adjacentPosition(belt.position, belt.direction), "transport-belt")
+    local downstreamUGBelt = getBeltLike(belt.surface, adjacentPosition(belt.position, belt.direction), "underground-belt")
+    local downstreamLoader = getBeltLike(belt.surface, adjacentPosition(belt.position, belt.direction), "loader")
 
     if isBeltTerminatingDownstream(belt) then return nil end
     if isBeltSideloadingDownstream(belt) then return nil end
@@ -84,9 +88,9 @@ local function getNextBeltDownstream(belt)
 end
 
 local function getUpstreamBeltInDirection(belt, direction)
-    local upstreamBelt   = belt.surface.find_entity("transport-belt", adjacentPosition(belt.position, direction))
-    local upstreamUGBelt = belt.surface.find_entity("underground-belt", adjacentPosition(belt.position, direction))
-    local upstreamLoader = belt.surface.find_entity("loader", adjacentPosition(belt.position, direction))
+    local upstreamBelt   = getBeltLike(belt.surface, adjacentPosition(belt.position, direction), "transport-belt")
+    local upstreamUGBelt = getBeltLike(belt.surface, adjacentPosition(belt.position, direction), "underground-belt")
+    local upstreamLoader = getBeltLike(belt.surface, adjacentPosition(belt.position, direction), "loader")
     if upstreamBelt and upstreamBelt.direction == oppositeDirection[direction] then return upstreamBelt end
     if upstreamLoader and upstreamLoader.direction == oppositeDirection[direction] then return upstreamLoader end
     if upstreamUGBelt and upstreamUGBelt.direction == oppositeDirection[direction] and upstreamUGBelt.belt_to_ground_type == "output" then return upstreamUGBelt end
