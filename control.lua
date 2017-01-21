@@ -58,13 +58,13 @@ local function isBeltSideloadingDownstream(belt)
         local continuingBelt = true
         if not (upstreamBelt or upstreamUGBelt or upstreamLoader) then continuingBelt = false end
         if upstreamBelt   and upstreamBelt.direction   ~= downstreamBelt.direction then continuingBelt = false end
-        if upstreamUGBelt and upstreamUGBelt.direction ~= downstreamBelt.direction and upstreamUGBelt.belt_to_ground_type ~= "output" then continuingBelt = false end
+        if upstreamUGBelt and not (upstreamUGBelt.direction == downstreamBelt.direction and upstreamUGBelt.belt_to_ground_type == "output") then continuingBelt = false end
         if upstreamLoader and upstreamLoader.direction ~= downstreamBelt.direction then continuingBelt = false end
 
         local sandwichBelt = true
         if not (oppositeBelt or oppositeUGBelt or oppositeLoader) then sandwichBelt = false end
         if oppositeBelt   and oppositeBelt.direction   ~= oppositeDirection[belt.direction] then sandwichBelt = false end
-        if oppositeUGBelt and oppositeUGBelt.direction ~= oppositeDirection[belt.direction] and oppositeUGBelt.belt_to_ground_type ~= "output" then sandwichBelt = false end
+        if oppositeUGBelt and not (oppositeUGBelt.direction == oppositeDirection[belt.direction] and oppositeUGBelt.belt_to_ground_type == "output") then sandwichBelt = false end
         if oppositeLoader and oppositeLoader.direction ~= oppositeDirection[belt.direction] then sandwichBelt = false end
 
         if not continuingBelt and not sandwichBelt then return false end
