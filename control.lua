@@ -1,3 +1,5 @@
+require("flipBeltLines")
+
 local function adjacentPosition(position, direction)
     if direction == defines.direction.north then return { position.x, position.y - 1 }
     elseif direction == defines.direction.south then return { position.x, position.y + 1 }
@@ -133,10 +135,10 @@ local function reverseBelt(belt, direction)
         if belt.belt_to_ground_type == "input" then
             local output = belt.neighbours[1]
             local surface = belt.surface
+            local newInput, newOutput, newInputParams, newOutputParams, savedInputLines, savedOutputLines
 
-            local newInputParams
-            if output then end
-            local newOutputParams = {
+            savedInputLines = flipBeltLines.copyUGBeltLines(belt)
+            newOutputParams = {
                 name         = belt.name,
                 position     = belt.position,
                 force        = belt.force,
@@ -144,8 +146,9 @@ local function reverseBelt(belt, direction)
                 type         = "output",
                 player = player,
             }
-            belt.destroy()
+
             if output then
+                savedOutputLines = flipBeltLines.copyUGBeltLines(output)
                 newInputParams = {
                     name         = output.name,
                     position     = output.position,
@@ -154,10 +157,25 @@ local function reverseBelt(belt, direction)
                     type         = "input",
                     player = player,
                 }
-                output.destroy()
-                local newInput = surface.create_entity(newInputParams)
             end
-            local newOutput = surface.create_entity(newOutputParams)
+
+            belt.destroy()
+            if output then
+                output.destroy()
+                newInput = surface.create_entity(newInputParams)
+            end
+            newOutput = surface.create_entity(newOutputParams)
+
+            if newInput then
+                flipBeltLines.replaceBeltLane(newInput.get_transport_line(1), savedInputLines[2])
+                flipBeltLines.replaceBeltLane(newInput.get_transport_line(2), savedInputLines[1])
+                flipBeltLines.replaceBeltLane(newInput.get_transport_line(3), savedInputLines[4])
+                flipBeltLines.replaceBeltLane(newInput.get_transport_line(4), savedInputLines[3])
+                flipBeltLines.replaceBeltLane(newOutput.get_transport_line(1), savedOutputLines[2])
+                flipBeltLines.replaceBeltLane(newOutput.get_transport_line(2), savedOutputLines[1])
+                flipBeltLines.replaceBeltLane(newOutput.get_transport_line(3), savedOutputLines[4])
+                flipBeltLines.replaceBeltLane(newOutput.get_transport_line(4), savedOutputLines[3])
+            end
         elseif not belt.neighbours[1] then
             local newInput = belt.surface.create_entity{
                 name         = belt.name,
@@ -171,6 +189,7 @@ local function reverseBelt(belt, direction)
         end
     else
         belt.direction = direction
+        flipBeltLines.flipBeltLines(belt)
     end
 end
 
@@ -191,7 +210,7 @@ end
 
 local function reverseEntireBelt(event)
     -- find belt under cursor
-     player = game.players[event.player_index]
+    player = game.players[event.player_index]
     if player.connected and player.selected and player.controller_type ~= defines.controllers.ghost then
         local initialBelt = player.selected
         if initialBelt and (initialBelt.type == "transport-belt" or initialBelt.type == "underground-belt" or initialBelt.type == "loader") then
