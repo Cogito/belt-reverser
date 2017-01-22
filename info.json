@@ -5,7 +5,7 @@
   "title": "Belt Reverser",
   "author": "Cogito",
   "contact": "",
-  "homepage": "",
+  "homepage": "https://github.com/Cogito/belt-reverser",
   "description": "Reverse entire segments of belt",
   "dependencies": ["base >= 0.14"],
   "license": "MIT"
