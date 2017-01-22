@@ -82,6 +82,10 @@ local function getNextBeltDownstream(belt)
         if belt.neighbours then return belt.neighbours[1] else return nil end
     end
 
+    if belt.type == "loader" then
+        if belt.loader_type == "output" then distance = 1.5 else return nil end
+    end
+
     local downstreamBelt   = getBeltLike(belt.surface, adjacentPosition(belt.position, belt.direction, distance), "transport-belt")
     local downstreamUGBelt = getBeltLike(belt.surface, adjacentPosition(belt.position, belt.direction, distance), "underground-belt")
     local downstreamLoader = getBeltLike(belt.surface, adjacentPosition(belt.position, belt.direction, distance), "loader")
@@ -107,6 +111,14 @@ end
 local function getNextBeltUpstream(belt)
     if belt.type == "underground-belt" and belt.belt_to_ground_type == "output" then
         if belt.neighbours then return belt.neighbours[1] else return nil end
+    end
+
+    if belt.type == "loader" then
+        if belt.loader_type == "input" then
+            local linearBelt = getUpstreamBeltInDirection(belt, oppositeDirection[belt.direction], 1.5)
+            if linearBelt then return linearBelt end
+        end
+        return nil
     end
 
     local linearBelt    = getUpstreamBeltInDirection(belt, oppositeDirection[belt.direction])
