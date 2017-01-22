@@ -187,6 +187,8 @@ local function reverseBelt(belt, direction)
                 spill        = false,
             }
         end
+    elseif belt.type == "loader" then
+        flipBeltLines.replace_loader(belt)
     else
         belt.direction = direction
         flipBeltLines.flipBeltLines(belt)

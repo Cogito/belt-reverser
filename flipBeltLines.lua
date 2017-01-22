@@ -50,3 +50,22 @@ function M.contentsToString (contents, i)
     end
     return output
 end
+
+function M.replace_loader(entity)
+    local name, position, surface, force, direction,loader_type,last_user = entity.name, entity.position, entity.surface, entity.force, entity.direction, entity.loader_type, entity.last_user
+    local filters = {}
+    for slot = 1, entity.filter_slot_count do
+        filters[slot] = entity.get_filter(slot)
+    end
+    entity.destroy()
+    loader_type = loader_type == "input" and "output" or "input"
+    direction = (direction + 4) % 8
+    local new = surface.create_entity{name=name, position=position, force=force, direction=direction,type=loader_type}
+    if new and new.valid then
+        for slot, filter in pairs(filters) do
+            new.set_filter(slot, filter)
+        end
+        new.last_user = last_user
+        -- TODO raise events -- game.raise_event(defines.events.on_built_entity, {corrected_loader=true, player_index=player_index, created_entity=new})
+    end
+end
