@@ -38,9 +38,8 @@ local function isBeltTerminatingDownstream(belt, distance)
     local downstreamUGBelt = getBeltLike(belt.surface, adjacentPosition(belt.position, belt.direction, distance), "underground-belt")
     local downstreamLoader = getBeltLike(belt.surface, adjacentPosition(belt.position, belt.direction, distance), "loader")
     if downstreamBelt   and downstreamBelt.direction ~= oppositeDirection[belt.direction] then return false end
-    if downstreamUGBelt and (downstreamUGBelt.direction ~= oppositeDirection[belt.direction]
-            and not (downstreamUGBelt.direction == belt.direction and downstreamUGBelt.belt_to_ground_type == "output")) then return false end
-    if downstreamLoader and downstreamLoader.direction ~= oppositeDirection[belt.direction] then return false end
+    if downstreamUGBelt and downstreamUGBelt.direction == belt.direction and downstreamUGBelt.belt_to_ground_type == "input" then return false end
+    if downstreamLoader and downstreamLoader.direction == belt.direction and downstreamLoader.loader_type == "input" then return false end
     return true
 end
 
