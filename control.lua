@@ -94,7 +94,7 @@ local function getUpstreamBeltInDirection(belt, direction)
     local upstreamUGBelt = getBeltLike(belt.surface, adjacentPosition(belt.position, direction), "underground-belt")
     local upstreamLoader = getBeltLike(belt.surface, adjacentPosition(belt.position, direction), "loader")
     if upstreamBelt and upstreamBelt.direction == oppositeDirection[direction] then return upstreamBelt end
-    if upstreamLoader and upstreamLoader.direction == oppositeDirection[direction] then return upstreamLoader end
+    if upstreamLoader and upstreamLoader.direction == oppositeDirection[direction] and upstreamLoader.loader_type == "output" then return upstreamLoader end
     if upstreamUGBelt and upstreamUGBelt.direction == oppositeDirection[direction] and upstreamUGBelt.belt_to_ground_type == "output" then return upstreamUGBelt end
     return nil
 end
