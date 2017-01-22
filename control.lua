@@ -115,7 +115,14 @@ end
 
 local function findStartOfBelt(currentBelt, initialBelt)
     local newBelt  = getNextBeltUpstream(currentBelt)
-    if not newBelt or newBelt == initialBelt then return currentBelt end
+    if not newBelt then return currentBelt end
+    if newBelt == initialBelt then
+        if newBelt.type == "underground-belt" and newBelt.belt_to_ground_type == "input" then
+            return newBelt
+        else
+            return currentBelt
+        end
+    end
     return findStartOfBelt(newBelt, initialBelt)
 end
 
