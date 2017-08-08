@@ -1,4 +1,5 @@
 require("flipBeltLines")
+require("beltHelper")
 
 local function adjacentPosition(position, direction, distance)
     local distance = distance or 1
