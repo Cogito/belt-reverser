@@ -79,7 +79,7 @@ end
 local function getNextBeltDownstream(belt)
     local distance = 1
     if belt.type == "underground-belt" and belt.belt_to_ground_type == "input" then
-        if belt.neighbours then return belt.neighbours[1] else return nil end
+        if belt.neighbours then return belt.neighbours else return nil end
     end
 
     if belt.type == "loader" then
@@ -110,7 +110,7 @@ end
 
 local function getNextBeltUpstream(belt)
     if belt.type == "underground-belt" and belt.belt_to_ground_type == "output" then
-        if belt.neighbours then return belt.neighbours[1] else return nil end
+        if belt.neighbours then return belt.neighbours else return nil end
     end
 
     if belt.type == "loader" then
@@ -150,7 +150,7 @@ local function reverseBelt(belt, direction)
         -- only reverse inputs, unless the output is not connected - then reverse it too
         -- for now, assume that reversing ug belt just means reversing it
         if belt.belt_to_ground_type == "input" then
-            local output = belt.neighbours[1]
+            local output = belt.neighbours
             local surface = belt.surface
             local newInput, newOutput, newInputParams, newOutputParams, savedInputLines, savedOutputLines
 
@@ -193,7 +193,7 @@ local function reverseBelt(belt, direction)
                 flipBeltLines.replaceBeltLane(newOutput.get_transport_line(3), savedOutputLines[4])
                 flipBeltLines.replaceBeltLane(newOutput.get_transport_line(4), savedOutputLines[3])
             end
-        elseif not belt.neighbours[1] then
+        elseif not belt.neighbours then
             local newInput = belt.surface.create_entity{
                 name         = belt.name,
                 position     = belt.position,
