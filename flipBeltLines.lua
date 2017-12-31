@@ -65,7 +65,7 @@ function M.replace_loader(entity)
         for slot, filter in pairs(filters) do
             new.set_filter(slot, filter)
         end
-        new.last_user = last_user
+        if last_user then new.last_user = last_user end
         -- TODO raise events -- game.raise_event(defines.events.on_built_entity, {corrected_loader=true, player_index=player_index, created_entity=new})
     end
 end
