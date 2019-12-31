@@ -2,6 +2,6 @@ data:extend({
     {
         type = "custom-input",
         name = "ReverseEntireBelt",
-        key_sequence = "ALT + r",
+        key_sequence = "ALT + R",
     }
 })
